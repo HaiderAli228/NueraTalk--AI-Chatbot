@@ -6,7 +6,7 @@ class Routes {
   static Route<dynamic> generatedRoutes(RouteSettings setting) {
     switch (setting.name) {
       case RoutesName.homeView:
-        return _createRoute(const HomeView());
+        return _createRoute( HomeView());
       default:
         return _createRoute(
           const Scaffold(
