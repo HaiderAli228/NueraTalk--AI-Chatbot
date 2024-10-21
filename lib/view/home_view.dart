@@ -18,8 +18,10 @@ class _HomeViewState extends State<HomeView> {
     enableLog: true,
     baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 5)),
   );
-  final ChatUser currentUser = ChatUser(id: "1", firstName: "Hagider", lastName: "Ali");
-  final ChatUser gptUser = ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
+  final ChatUser currentUser =
+      ChatUser(id: "1", firstName: "Hagider", lastName: "Ali");
+  final ChatUser gptUser =
+      ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
 
   List<ChatMessage> messageList = <ChatMessage>[];
   List<ChatUser> typeUser = <ChatUser>[];
@@ -40,18 +42,21 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
       ),
-      body: DashChat(
-        currentUser: currentUser,
-        typingUsers: typeUser,
-        messageOptions: const MessageOptions(
-          textColor: AppColor.themeTextColor,
-          currentUserContainerColor: AppColor.themeColor,
-          containerColor: AppColor.themeColor,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: DashChat(
+          currentUser: currentUser,
+          typingUsers: typeUser,
+          messageOptions: const MessageOptions(
+            textColor: AppColor.themeTextColor,
+            currentUserContainerColor: AppColor.themeColor,
+            containerColor: AppColor.themeColor,
+          ),
+          onSend: (ChatMessage msg) {
+            getChatResponse(msg);
+          },
+          messages: messageList, // Pass messageList directly here.
         ),
-        onSend: (ChatMessage msg) {
-          getChatResponse(msg);
-        },
-        messages: messageList,  // Pass messageList directly here.
       ),
     );
   }
@@ -63,7 +68,10 @@ class _HomeViewState extends State<HomeView> {
     });
 
     List<Map<String, dynamic>> msgHistory = messageList.reversed.map((msg) {
-      return {"role": msg.user == currentUser ? "user" : "assistant", "content": msg.text};
+      return {
+        "role": msg.user == currentUser ? "user" : "assistant",
+        "content": msg.text
+      };
     }).toList();
 
     try {
@@ -101,7 +109,7 @@ class _HomeViewState extends State<HomeView> {
               user: gptUser,
               createdAt: DateTime.now(),
               text:
-              "You have exceeded the API quota. This is a mock response. Please check your API usage or upgrade your plan.",
+                  "You have exceeded the API quota. This is a mock response. Please check your API usage or upgrade your plan.",
             ),
           );
         });
