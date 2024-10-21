@@ -14,53 +14,15 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final openAIApi = OpenAI.instance.build(
-      token: AppLinks.chatbotPostApi,
-      enableLog: true,
-      baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 5)));
-  final ChatUser currentUser =
-      ChatUser(id: "1", firstName: "Haider", lastName: "Ali");
-
-  final ChatUser gptUser =
-      ChatUser(id: "2", firstName: "chatbot", lastName: "-NueraTalk");
+    token: AppLinks.chatbotPostApi,
+    enableLog: true,
+    baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 5)),
+  );
+  final ChatUser currentUser = ChatUser(id: "1", firstName: "Hagider", lastName: "Ali");
+  final ChatUser gptUser = ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
 
   List<ChatMessage> messageList = <ChatMessage>[];
   List<ChatUser> typeUser = <ChatUser>[];
-  Future<void> getChatResponse(ChatMessage msg) async {
-    setState(() {
-      messageList.insert(0, msg);
-      typeUser.add(gptUser);
-    });
-
-    List<Map<String, dynamic>> msgHistory = messageList.reversed.map((msg) {
-      if (msg.user == currentUser) {
-        return {"role": "user", "content": msg.text};
-      } else {
-        return {"role": "assistant", "content": msg.text};
-      }
-    }).toList();
-
-    final request = ChatCompleteText(
-      model: GptTurbo0301ChatModel(),
-      messages: msgHistory,
-      maxToken: 200,
-    );
-    final response = await openAIApi.onChatCompletion(request: request);
-    for (var element in response!.choices) {
-      if (element.message != null) {
-        setState(() {
-          messageList.insert(
-              0,
-              ChatMessage(
-                  user: gptUser,
-                  createdAt: DateTime.now(),
-                  text: element.message!.content));
-        });
-      }
-    }
-    setState(() {
-      typeUser.remove(gptUser) ;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,16 +41,86 @@ class _HomeViewState extends State<HomeView> {
         ),
       ),
       body: DashChat(
-          currentUser: currentUser,
-          typingUsers: typeUser,
-          messageOptions: const MessageOptions(
-              textColor: AppColor.themeTextColor,
-              currentUserContainerColor: AppColor.themeColor,
-              containerColor: AppColor.themeColor),
-          onSend: (ChatMessage msg) {
-            getChatResponse(msg);
-          },
-          messages: messageList),
+        currentUser: currentUser,
+        typingUsers: typeUser,
+        messageOptions: const MessageOptions(
+          textColor: AppColor.themeTextColor,
+          currentUserContainerColor: AppColor.themeColor,
+          containerColor: AppColor.themeColor,
+        ),
+        onSend: (ChatMessage msg) {
+          getChatResponse(msg);
+        },
+        messages: messageList,  // Pass messageList directly here.
+      ),
     );
+  }
+
+  Future<void> getChatResponse(ChatMessage msg) async {
+    setState(() {
+      messageList.insert(0, msg);
+      typeUser.add(gptUser);
+    });
+
+    List<Map<String, dynamic>> msgHistory = messageList.reversed.map((msg) {
+      return {"role": msg.user == currentUser ? "user" : "assistant", "content": msg.text};
+    }).toList();
+
+    try {
+      final request = ChatCompleteText(
+        model: GptTurboChatModel(),
+        messages: msgHistory,
+        maxToken: 50, // Keep this low to avoid heavy API usage
+      );
+
+      final response = await openAIApi.onChatCompletion(request: request);
+
+      if (response != null) {
+        for (var element in response.choices) {
+          if (element.message != null) {
+            setState(() {
+              messageList.insert(
+                0,
+                ChatMessage(
+                  user: gptUser,
+                  createdAt: DateTime.now(),
+                  text: element.message!.content,
+                ),
+              );
+            });
+          }
+        }
+      }
+    } catch (e) {
+      if (e.toString().contains("429")) {
+        // Simulate a mock response
+        setState(() {
+          messageList.insert(
+            0,
+            ChatMessage(
+              user: gptUser,
+              createdAt: DateTime.now(),
+              text:
+              "You have exceeded the API quota. This is a mock response. Please check your API usage or upgrade your plan.",
+            ),
+          );
+        });
+      } else {
+        setState(() {
+          messageList.insert(
+            0,
+            ChatMessage(
+              user: gptUser,
+              createdAt: DateTime.now(),
+              text: "Error: ${e.toString()}",
+            ),
+          );
+        });
+      }
+    } finally {
+      setState(() {
+        typeUser.remove(gptUser);
+      });
+    }
   }
 }
