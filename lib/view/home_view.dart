@@ -53,7 +53,6 @@ class _HomeViewState extends State<HomeView> {
       version: 1,
     );
 
-    await deleteOldChats(); // Clean up old chats
     loadChats();
   }
 
@@ -65,7 +64,13 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> saveChatSession() async {
-    final title = 'Chat on ${DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}';
+    // Generate a title based on the last message
+    final lastMessageText = messageList.isNotEmpty
+        ? messageList.first.text
+        : "New Chat";
+
+    final title = 'Chat: "${lastMessageText}" - ${DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}';
+
     final chatMessages = messageList
         .map((msg) => "${msg.user.firstName}: ${msg.text}")
         .join('\n');
@@ -146,37 +151,37 @@ class _HomeViewState extends State<HomeView> {
         ),
       ),
       drawer: Drawer(
-        backgroundColor: Colors.black,
+        surfaceTintColor: Colors.white,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             const UserAccountsDrawerHeader(
                 decoration: BoxDecoration(color: AppColor.themeColor),
-                accountName: Text("Haider Ali", style: TextStyle(color: Colors.white)),
+                accountName: Text("Haider Ali"),
                 currentAccountPicture: CircleAvatar(
                   backgroundColor: Colors.white,
                   child: Text("HA"),
                 ),
-                accountEmail: Text("flutter2830@gmail.com", style: TextStyle(color: Colors.white))),
+                accountEmail: Text("flutter2830@gmail.com")),
             ...chatSessions.map((chat) {
               final chatDate = DateTime.parse(chat['date']);
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade800,
+                  color: Colors.grey.shade300,
                   border: Border.all(
-                    color: Colors.grey.shade700,
+                    color: Colors.grey.shade300,
                   ),
                   borderRadius: const BorderRadius.all(Radius.circular(10)),
                 ),
                 child: ListTile(
                   title: Text(
                     chat['title'],
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.black),
                   ),
                   subtitle: Text(
                     getChatLabel(chatDate),
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.black),
                   ),
                   onTap: () => loadChat(chat['id']),
                 ),
