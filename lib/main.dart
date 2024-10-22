@@ -1,7 +1,8 @@
+
+
 import 'package:chatbot/routes/routes.dart';
 import 'package:chatbot/routes/routes_name.dart';
 import 'package:chatbot/utils/app_colors.dart';
-import 'package:chatbot/view/home_view.dart';
 import 'package:flutter/material.dart';
 
 void main() {

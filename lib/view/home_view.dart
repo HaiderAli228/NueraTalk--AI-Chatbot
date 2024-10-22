@@ -1,8 +1,11 @@
-import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
-import 'package:chatbot/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'package:intl/intl.dart';
 
+import '../utils/app_colors.dart';
 import '../view-model/app_links.dart';
 
 class HomeView extends StatefulWidget {
@@ -13,18 +16,118 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  final openAIApi = OpenAI.instance.build(
-    token: AppLinks.chatbotPostApi,
-    enableLog: true,
-    baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 5)),
-  );
+  late final GenerativeModel generativeModel;
   final ChatUser currentUser =
-      ChatUser(id: "1", firstName: "Hagider", lastName: "Ali");
+  ChatUser(id: "1", firstName: "Haider", lastName: "Ali");
   final ChatUser gptUser =
-      ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
+  ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
 
   List<ChatMessage> messageList = <ChatMessage>[];
-  List<ChatUser> typeUser = <ChatUser>[];
+  List<ChatUser> typingUsers = <ChatUser>[];
+  late Database db;
+  List<Map<String, dynamic>> chatSessions = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize the GenerativeModel
+    generativeModel = GenerativeModel(
+      model: 'gemini-1.5-flash-latest',
+      apiKey: AppLinks.chatbotPostApi,
+    );
+
+    // Initialize database and load chat sessions
+    initDb();
+  }
+
+  Future<void> initDb() async {
+    final dbPath = await getDatabasesPath();
+    db = await openDatabase(
+      join(dbPath, 'chats.db'),
+      onCreate: (db, version) {
+        return db.execute(
+          'CREATE TABLE chats(id INTEGER PRIMARY KEY, title TEXT, date TEXT, messages TEXT)',
+        );
+      },
+      version: 1,
+    );
+
+    await deleteOldChats(); // Clean up old chats
+    loadChats();
+  }
+
+  Future<void> loadChats() async {
+    final chats = await db.query('chats', orderBy: 'date DESC');
+    setState(() {
+      chatSessions = chats;
+    });
+  }
+
+  Future<void> saveChatSession() async {
+    final title = 'Chat on ${DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}';
+    final chatMessages = messageList
+        .map((msg) => "${msg.user.firstName}: ${msg.text}")
+        .join('\n');
+
+    await db.insert(
+      'chats',
+      {
+        'title': title,
+        'date': DateTime.now().toString(),
+        'messages': chatMessages
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    loadChats();
+  }
+
+  Future<void> loadChat(int chatId) async {
+    final chat = await db.query('chats', where: 'id = ?', whereArgs: [chatId]);
+
+    if (chat.isNotEmpty) {
+      final messages = chat.first['messages'].toString().split('\n');
+      setState(() {
+        messageList = messages.map((message) {
+          final parts = message.split(': ');
+          return ChatMessage(
+            user: parts[0] == 'Haider' ? currentUser : gptUser,
+            createdAt: DateTime.now(),
+            text: parts[1],
+          );
+        }).toList();
+      });
+    }
+  }
+
+  // Function to format chat titles based on date
+  String getChatLabel(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date).inDays;
+
+    if (difference == 0) {
+      return "Today";
+    } else if (difference == 1) {
+      return "Yesterday";
+    } else if (difference <= 7) {
+      return "Last Week";
+    } else if (difference <= 30) {
+      return "This Month";
+    } else {
+      return "Older";
+    }
+  }
+
+  // Delete chats older than one month
+  Future<void> deleteOldChats() async {
+    final oneMonthAgo = DateTime.now().subtract(const Duration(days: 30));
+    await db.delete(
+      'chats',
+      where: 'date < ?',
+      whereArgs: [oneMonthAgo.toIso8601String()],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,21 +145,60 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: DashChat(
-          currentUser: currentUser,
-          typingUsers: typeUser,
-          messageOptions: const MessageOptions(
-            textColor: AppColor.themeTextColor,
-            currentUserContainerColor: AppColor.themeColor,
-            containerColor: AppColor.themeColor,
-          ),
-          onSend: (ChatMessage msg) {
-            getChatResponse(msg);
-          },
-          messages: messageList, // Pass messageList directly here.
+      drawer: Drawer(
+        backgroundColor: Colors.black,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const UserAccountsDrawerHeader(
+                decoration: BoxDecoration(color: AppColor.themeColor),
+                accountName: Text("Haider Ali", style: TextStyle(color: Colors.white)),
+                currentAccountPicture: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Text("HA"),
+                ),
+                accountEmail: Text("flutter2830@gmail.com", style: TextStyle(color: Colors.white))),
+            ...chatSessions.map((chat) {
+              final chatDate = DateTime.parse(chat['date']);
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade800,
+                  border: Border.all(
+                    color: Colors.grey.shade700,
+                  ),
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
+                ),
+                child: ListTile(
+                  title: Text(
+                    chat['title'],
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  subtitle: Text(
+                    getChatLabel(chatDate),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  onTap: () => loadChat(chat['id']),
+                ),
+              );
+            }),
+          ],
         ),
+      ),
+      body: DashChat(
+        currentUser: currentUser,
+        typingUsers: typingUsers,
+        messageOptions: MessageOptions(
+          textColor: AppColor.themeTextColor,
+          currentUserContainerColor: Colors.grey.shade300,
+          currentUserTextColor: Colors.black,
+          containerColor: AppColor.themeColor,
+        ),
+        onSend: (ChatMessage msg) {
+          getChatResponse(msg);
+          saveChatSession(); // Automatically save chat after sending a message
+        },
+        messages: messageList,
       ),
     );
   }
@@ -64,70 +206,41 @@ class _HomeViewState extends State<HomeView> {
   Future<void> getChatResponse(ChatMessage msg) async {
     setState(() {
       messageList.insert(0, msg);
-      typeUser.add(gptUser);
+      typingUsers.add(gptUser); // Show that GPT is typing
     });
 
-    List<Map<String, dynamic>> msgHistory = messageList.reversed.map((msg) {
-      return {
-        "role": msg.user == currentUser ? "user" : "assistant",
-        "content": msg.text
-      };
-    }).toList();
+    // Prepare the prompt for the GenerativeModel
+    final prompt = "User: ${msg.text}";
 
     try {
-      final request = ChatCompleteText(
-        model: GptTurboChatModel(),
-        messages: msgHistory,
-        maxToken: 50, // Keep this low to avoid heavy API usage
-      );
+      final content = [Content.text(prompt)];
+      final response = await generativeModel.generateContent(content);
+      final responseText = response.text;
 
-      final response = await openAIApi.onChatCompletion(request: request);
-
-      if (response != null) {
-        for (var element in response.choices) {
-          if (element.message != null) {
-            setState(() {
-              messageList.insert(
-                0,
-                ChatMessage(
-                  user: gptUser,
-                  createdAt: DateTime.now(),
-                  text: element.message!.content,
-                ),
-              );
-            });
-          }
-        }
-      }
+      setState(() {
+        messageList.insert(
+          0,
+          ChatMessage(
+            user: gptUser,
+            createdAt: DateTime.now(),
+            text: responseText.toString(),
+          ),
+        );
+      });
     } catch (e) {
-      if (e.toString().contains("429")) {
-        // Simulate a mock response
-        setState(() {
-          messageList.insert(
-            0,
-            ChatMessage(
-              user: gptUser,
-              createdAt: DateTime.now(),
-              text:
-                  "You have exceeded the API quota. This is a mock response. Please check your API usage or upgrade your plan.",
-            ),
-          );
-        });
-      } else {
-        setState(() {
-          messageList.insert(
-            0,
-            ChatMessage(
-              user: gptUser,
-              createdAt: DateTime.now(),
-              text: "Error: ${e.toString()}",
-            ),
-          );
-        });
-      }
+      setState(() {
+        messageList.insert(
+          0,
+          ChatMessage(
+            user: gptUser,
+            createdAt: DateTime.now(),
+            text: "Error: ${e.toString()}",
+          ),
+        );
+      });
     } finally {
       setState(() {
-        typeUser.remove(gptUser);
+        typingUsers.remove(gptUser); // Remove typing indicator
       });
     }
   }

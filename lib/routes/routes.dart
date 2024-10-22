@@ -1,12 +1,14 @@
+
 import 'package:chatbot/routes/routes_name.dart';
-import 'package:chatbot/view/home_view.dart';
 import 'package:flutter/material.dart';
+
+import '../view/home_view.dart';
 
 class Routes {
   static Route<dynamic> generatedRoutes(RouteSettings setting) {
     switch (setting.name) {
       case RoutesName.homeView:
-        return _createRoute( HomeView());
+        return _createRoute( const HomeView());
       default:
         return _createRoute(
           const Scaffold(
