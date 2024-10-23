@@ -18,9 +18,9 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   late final GenerativeModel generativeModel;
   final ChatUser currentUser =
-  ChatUser(id: "1", firstName: "Haider", lastName: "Ali");
+      ChatUser(id: "1", firstName: "Haider", lastName: "Ali");
   final ChatUser gptUser =
-  ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
+      ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
 
   List<ChatMessage> messageList = <ChatMessage>[];
   List<ChatUser> typingUsers = <ChatUser>[];
@@ -65,11 +65,11 @@ class _HomeViewState extends State<HomeView> {
 
   Future<void> saveChatSession() async {
     // Generate a title based on the last message
-    final lastMessageText = messageList.isNotEmpty
-        ? messageList.first.text
-        : "New Chat";
+    final lastMessageText =
+        messageList.isNotEmpty ? messageList.first.text : "New Chat";
 
-    final title = 'Chat: "${lastMessageText}" - ${DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}';
+    final title =
+        'Chat: "${lastMessageText}" - ${DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}';
 
     final chatMessages = messageList
         .map((msg) => "${msg.user.firstName}: ${msg.text}")
@@ -149,6 +149,7 @@ class _HomeViewState extends State<HomeView> {
             color: AppColor.themeTextColor,
           ),
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       drawer: Drawer(
         surfaceTintColor: Colors.white,

@@ -1,9 +1,7 @@
-
-
-import 'package:chatbot/routes/routes.dart';
-import 'package:chatbot/routes/routes_name.dart';
-import 'package:chatbot/utils/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:nueraTalk/routes/routes.dart';
+import 'package:nueraTalk/routes/routes_name.dart';
+import 'package:nueraTalk/utils/app_colors.dart';
 
 void main() {
   runApp(const MyApp());
