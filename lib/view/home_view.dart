@@ -4,7 +4,6 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:intl/intl.dart';
-
 import '../utils/app_colors.dart';
 import '../view-model/app_links.dart';
 
@@ -18,9 +17,9 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   late final GenerativeModel generativeModel;
   final ChatUser currentUser =
-      ChatUser(id: "1", firstName: "Haider", lastName: "Ali");
+  ChatUser(id: "1", firstName: "Haider", lastName: "Ali");
   final ChatUser gptUser =
-      ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
+  ChatUser(id: "2", firstName: "Chatbot", lastName: "NueraTalk");
 
   List<ChatMessage> messageList = <ChatMessage>[];
   List<ChatUser> typingUsers = <ChatUser>[];
@@ -66,10 +65,10 @@ class _HomeViewState extends State<HomeView> {
   Future<void> saveChatSession() async {
     // Generate a title based on the last message
     final lastMessageText =
-        messageList.isNotEmpty ? messageList.first.text : "New Chat";
+    messageList.isNotEmpty ? messageList.first.text : "New Chat";
 
     final title =
-        'Chat: "${lastMessageText}" - ${DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}';
+        'Chat: "$lastMessageText" - ${DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}';
 
     final chatMessages = messageList
         .map((msg) => "${msg.user.firstName}: ${msg.text}")
@@ -199,6 +198,14 @@ class _HomeViewState extends State<HomeView> {
           currentUserContainerColor: Colors.grey.shade300,
           currentUserTextColor: Colors.black,
           containerColor: AppColor.themeColor,
+        ),
+        readOnly: false,
+        inputOptions: const InputOptions(
+          autocorrect: true,
+          alwaysShowSend: false,
+          cursorStyle: CursorStyle(
+            color: AppColor.themeColor,
+          ),
         ),
         onSend: (ChatMessage msg) {
           getChatResponse(msg);
