@@ -14,6 +14,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+       textTheme: const TextTheme(
+         bodyMedium: TextStyle(fontSize: 20)
+       ),
        primaryColor: AppColor.themeColor,
       ),
       initialRoute: RoutesName.homeView,

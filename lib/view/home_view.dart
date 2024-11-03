@@ -145,6 +145,7 @@ class _HomeViewState extends State<HomeView> {
           style: TextStyle(
             fontFamily: "Poppins",
             fontWeight: FontWeight.bold,
+            fontSize: 20,
             color: AppColor.themeTextColor,
           ),
         ),
